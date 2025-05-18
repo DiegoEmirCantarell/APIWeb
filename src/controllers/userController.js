@@ -21,34 +21,76 @@ exports.getMe = async (req, res) => {
   }
 };
 
-// Update current user
+// Update current user password
 exports.updateMe = async (req, res) => {
   try {
-    // Check if password was provided (this route is not for password updates)
-    if (req.body.password) {
+    // 1) Check if password field exists
+    if (!req.body.password) {
       return res.status(400).json({
         status: 'fail',
-        message: 'This route is not for password updates. Please use /updatePassword.',
+        message: 'Password is required'
       });
     }
 
-    // Filter out unwanted fields that are not allowed to be updated
-    const filteredBody = filterObj(req.body, 'name', 'email');
+    // 2) Hash the password
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(req.body.password, 12);
 
-    // Update user document
-    const updatedUser = await User.update(filteredBody, {
-      where: { id: req.user.id },
-      returning: true,
-      plain: true,
-    });
+    // 3) Update only the password
+    await User.update(
+      { password: hashedPassword }, 
+      { where: { id: req.user.id } }
+    );
 
-    // Fetch updated user
+    // 4) Fetch updated user data (without password)
     const user = await User.findByPk(req.user.id, {
       attributes: { exclude: ['password'] },
     });
 
     res.status(200).json({
       status: 'success',
+      message: 'Password updated successfully',
+      data: {
+        user,
+      },
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: 'fail',
+      message: err.message,
+    });
+  }
+};
+
+// Update password
+exports.updatePassword = async (req, res) => {
+  try {
+    // 1) Check if password field exists
+    if (!req.body.password) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Password is required'
+      });
+    }
+
+    // 2) Hash the password
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(req.body.password, 12);
+
+    // 3) Update only the password
+    await User.update(
+      { password: hashedPassword }, 
+      { where: { id: req.user.id } }
+    );
+
+    // 4) Fetch updated user data (without password)
+    const user = await User.findByPk(req.user.id, {
+      attributes: { exclude: ['password'] },
+    });
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Password updated successfully',
       data: {
         user,
       },
@@ -68,4 +110,29 @@ const filterObj = (obj, ...allowedFields) => {
     if (allowedFields.includes(el)) newObj[el] = obj[el];
   });
   return newObj;
+};
+
+// Get all users except admins (only buyers and sellers)
+exports.getNonAdminUsers = async (req, res) => {
+  try {
+    const users = await User.findAll({
+      where: {
+        role: ['buyer', 'seller']
+      },
+      attributes: { exclude: ['password'] },
+    });
+
+    res.status(200).json({
+      status: 'success',
+      results: users.length,
+      data: {
+        users,
+      },
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: 'fail',
+      message: err.message,
+    });
+  }
 }; 

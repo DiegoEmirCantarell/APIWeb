@@ -145,14 +145,6 @@ exports.deleteProduct = async (req, res) => {
       });
     }
 
-    // Check if user is the owner of the product
-    if (product.user_id !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({
-        status: 'fail',
-        message: 'You can only delete your own products',
-      });
-    }
-
     await Product.destroy({
       where: { id: req.params.id },
     });
@@ -160,6 +152,158 @@ exports.deleteProduct = async (req, res) => {
     res.status(204).json({
       status: 'success',
       data: null,
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: 'fail',
+      message: err.message,
+    });
+  }
+};
+
+// Get products by seller ID
+exports.getProductsBySeller = async (req, res) => {
+  try {
+    const products = await Product.findAll({
+      where: { user_id: req.params.sellerId },
+      include: [
+        {
+          model: User,
+          as: 'seller',
+          attributes: ['id', 'name', 'email'],
+        },
+        {
+          model: CategoryProduct,
+          as: 'category',
+        },
+      ],
+    });
+
+    if (products.length === 0) {
+      return res.status(200).json({
+        status: 'success',
+        results: 0,
+        data: {
+          products: [],
+        },
+        message: 'No products found for this seller',
+      });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      results: products.length,
+      data: {
+        products,
+      },
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: 'fail',
+      message: err.message,
+    });
+  }
+};
+
+// Get products by category ID
+exports.getProductsByCategory = async (req, res) => {
+  try {
+    const products = await Product.findAll({
+      where: { category_product_id: req.params.categoryId },
+      include: [
+        {
+          model: User,
+          as: 'seller',
+          attributes: ['id', 'name', 'email'],
+        },
+        {
+          model: CategoryProduct,
+          as: 'category',
+        },
+      ],
+    });
+
+    if (products.length === 0) {
+      return res.status(200).json({
+        status: 'success',
+        results: 0,
+        data: {
+          products: [],
+        },
+        message: 'No products found for this category',
+      });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      results: products.length,
+      data: {
+        products,
+      },
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: 'fail',
+      message: err.message,
+    });
+  }
+};
+
+// Reduce stock for multiple products
+exports.reduceProductsStock = async (req, res) => {
+  try {
+    const { products } = req.body;
+    
+    if (!products || !Array.isArray(products) || products.length === 0) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Please provide an array of products with id and quantity',
+      });
+    }
+
+    const results = [];
+    const errors = [];
+
+    // Process each product in the array
+    for (const item of products) {
+      const { id, quantity } = item;
+      
+      if (!id || !quantity || quantity <= 0) {
+        errors.push({ id, message: 'Invalid id or quantity' });
+        continue;
+      }
+
+      const product = await Product.findByPk(id);
+      
+      if (!product) {
+        errors.push({ id, message: 'Product not found' });
+        continue;
+      }
+
+      if (product.stock < quantity) {
+        errors.push({ id, message: 'Insufficient stock' });
+        continue;
+      }
+
+      // Update the stock
+      const newStock = product.stock - quantity;
+      await Product.update({ stock: newStock }, { where: { id } });
+      
+      results.push({
+        id,
+        name: product.name,
+        previousStock: product.stock,
+        newStock,
+        reducedBy: quantity
+      });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        results,
+        errors: errors.length > 0 ? errors : undefined
+      },
     });
   } catch (err) {
     res.status(400).json({

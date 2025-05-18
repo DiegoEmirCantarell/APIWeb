@@ -9,5 +9,7 @@ router.use(authMiddleware.protect);
 
 router.get('/me', userController.getMe);
 router.patch('/updateMe', userController.updateMe);
+router.patch('/updatePassword', userController.updatePassword);
+router.get('/list', userController.getNonAdminUsers);
 
 module.exports = router; 
