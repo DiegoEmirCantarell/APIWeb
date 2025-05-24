@@ -1,0 +1,21 @@
+1°docker-compose up --build
+2° entrar my sql por terminal 
+docker exec -it mysql mysql -uroot -pyour_password mydb
+
+3° Correr seed
+docker exec -it node_app npm run seed
+
+
+
+comandos extra:
+1°docker ps
+te ayuda a ver lo contenedores que estan funcionando
+2°docker-compose down
+Detiene y elimina contenedores y redes, pero no volúmenes.
+
+3°docker-compose down -v	
+Elimina todo, incluyendo volúmenes anónimos (¡cuidado con datos de DB!).
+
+4°docker-compose up
+ Para levantar (iniciar) los contenedores definidos en tu archivo docker-compose.yml
+
