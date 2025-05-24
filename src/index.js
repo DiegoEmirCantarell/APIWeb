@@ -22,6 +22,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/scraping', require('./routes/scrapingRoutes'));
+app.use('/api/social', require('./routes/socialRoutes'));
 
 // Root route
 app.get('/', (req, res) => {
@@ -68,4 +70,4 @@ process.on('unhandledRejection', (err) => {
   console.error('UNHANDLED REJECTION! Shutting down...');
   console.error(err.name, err.message);
   process.exit(1);
-}); 
+});

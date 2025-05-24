@@ -1,0 +1,218 @@
+openapi: 3.0.0
+info:
+  title: APIWeb - Online Marketplace API
+  description: A RESTful API for an online marketplace platform
+  version: 1.0.0
+  
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [buyer, seller, admin]
+          
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        stock:
+          type: integer
+        image_url:
+          type: string
+        category_product_id:
+          type: integer
+        user_id:
+          type: integer
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        category:
+          type: string
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                role:
+                  type: string
+                  enum: [buyer, seller]
+      responses:
+        201:
+          description: User registered successfully
+          
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        200:
+          description: Login successful
+          
+  /users/me:
+    get:
+      tags:
+        - Users
+      summary: Get current user profile
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: User profile retrieved successfully
+          
+  /products:
+    get:
+      tags:
+        - Products
+      summary: Get all products
+      responses:
+        200:
+          description: List of products retrieved successfully
+          
+    post:
+      tags:
+        - Products
+      summary: Create a new product
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+      responses:
+        201:
+          description: Product created successfully
+          
+  /products/{id}:
+    get:
+      tags:
+        - Products
+      summary: Get product by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Product retrieved successfully
+          
+  /categories:
+    get:
+      tags:
+        - Categories
+      summary: Get all categories
+      responses:
+        200:
+          description: List of categories retrieved successfully
+          
+    post:
+      tags:
+        - Categories
+      summary: Create a new category
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Category'
+      responses:
+        201:
+          description: Category created successfully
+          
+  /social/tweet:
+    post:
+      tags:
+        - Social
+      summary: Post a tweet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  description: Tweet content
+                  maxLength: 280
+      responses:
+        201:
+          description: Tweet posted successfully
+        401:
+          description: Unauthorized - Invalid Twitter credentials
+          
+  /scraping/compare:
+    get:
+      tags:
+        - Scraping
+      summary: Compare product prices
+      parameters:
+        - in: query
+          name: product
+          required: true
+          schema:
+            type: string
+          description: Product name to search
+      responses:
+        200:
+          description: Product comparison retrieved successfully
